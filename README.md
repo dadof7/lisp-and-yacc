@@ -40,7 +40,7 @@ create table tmEmp (                                            -- master table 
 )
 ```
 
-Evaluating `(parse "k.sql")` makes
+Evaluating `(parse "k.sql")` yields
 
 ```
 ((tmEmp
@@ -67,7 +67,10 @@ That may be fun.
 
 Integers, reals, and strings can be used as atomic values.
 
-\` works in macro definitions. Also `,` and `,@` works.
+Functions and variables share the same name space. It's a deep binding and dynamic
+scoping lisp.
+
+\` works in macro definitions as well as `,` and `,@`.
 
 Tail-calls are executed by jumps.
 
@@ -125,7 +128,7 @@ Tail-calls are executed by jumps.
   | `funcall` | C
   | `apply` | C
   | `eval` | C
-  | `range` | C | returns numbers between given two integers as a list
+  | `range` | C | returns a list of numbers between given two integers
   | `foreach` | C | `(foreach i <list> expr1 expr2 ...)` 
   | `foreach-t` | C | same syntax as `foreach`
 | defun | lisp
@@ -136,12 +139,11 @@ Tail-calls are executed by jumps.
 | reverse | lisp
 | length | lisp
 | nth | lisp
-| + | lisp
+| + | lisp | arithmetic operator taking any number of perands
 | - | lisp
 | / | lisp
 | * | lisp
 | equal | lisp
-| range | lisp
 | cat | lisp | string concatination for any number of strings
 
 --------------
