@@ -48,7 +48,7 @@ static cell_ptr pair_list(cell_ptr formals, cell_ptr args)
   // &rest
   if(s == andrest_sym) {
     s = CDR(formals);
-    if(IS_NIL(s)) return NIL; // no param after &rest; cannot bind further
+    if(IS_NIL(s)) return NIL; // no formal param after &rest; cannot bind further
     s = CAR(s);
     v = args;
     return cons(cons(s, v), NIL);
@@ -147,12 +147,22 @@ CLJ apply(cell_ptr fbody, cell_ptr args, cell_ptr env, int do_not_evaluate_args)
     cell_ptr fformals = CAR(CDR(fbody));
     cell_ptr fexpr = CAR(CDR(CDR(fbody))); 
  
-    cell_ptr actual_args;
+    cell_ptr actual_args, eval_list_result = NIL;
     if(do_not_evaluate_args) actual_args = args; // lisp _apply already evaluated args
-    else actual_args = eval_list(args, env); 
+    else {
+      eval_list_result = eval_list(args, env);
+      actual_args = eval_list_result;
+    }
 
     clj.expr = fexpr;
     clj.env = destructive_append( pair_list(fformals, actual_args), env );
+
+    /* eval_list is not needed, so we want to reuse */
+    /* while(! ENDP(eval_list_result)) { */
+    /*   MRK(CAR(eval_list_result)) = 0b0; */
+    /*   eval_list_result = CDR(eval_list_result); */
+    /* } */
+    
     return clj;
   }
  

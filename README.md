@@ -62,6 +62,88 @@ For instance, you can use this list to generate some input-form.
 Once we get into the lisp world, you can try many thins using REPL.
 That may be fun.
 
+
+### Language features
+
+Integers, reals, and strings can be used as atomic values.
+
+\` works in macro definitions. Also `,` and `,@` works.
+
+Tail-calls are executed by jumps.
+
+|form|implementation|explanation|
+|----|-----|-----|
+  | `>` | C | numberic comparison
+  | `>=` | C 
+  | `<` | C
+  | `<=` | C
+  | `%` | C | arithmetic binary operator
+  | `mul2` | C
+  | `sub2` | C
+  | `add2` | C
+  | `div2` | C
+  | `if` | C 
+  | `not` | C
+  | `setq` | C
+  | `quote` | C | ' can be used instead
+  | `_bquote` | C |
+  | `dump` | C
+  | `gc` | C | force garbage collection
+  | `cons` | C
+  | `env` | C
+  | `car` | C
+  | `cdr` | C
+  | `cdr!` | C
+  | `=` | C
+  | `eq` | C
+  | `atom` | C
+  | `intp` | C
+  | `nump` | C
+  | `symbolp` | C
+  | `symbolp:` | C
+  | `listp` | C
+  | `consp` | C
+  | `null` | C
+  | `endp` | C
+  | `and` | C
+  | `or` | C
+  | `progn` | C
+  | `let` | C
+  | `let*` | C
+  | `parse` | C | invoke your parser
+  | `intern` | C
+  | `cond` | C
+  | `concatenate` | C | string concatination
+  | `cons-counter` | C
+  | `pr` | C | print things
+  | `prln` | C | `pr` with new-line
+  | `len` | C | string length
+  | `assoc` | C 
+  | `2str` | C | making a string from integer or real
+  | `gensym` | C | generate a new symbol 
+  | `macroexpand` | C | expand macro just once
+  | `funcall` | C
+  | `apply` | C
+  | `eval` | C
+  | `range` | C | returns numbers between given two integers as a list
+  | `foreach` | C | `(foreach i <list> expr1 expr2 ...)` 
+  | `foreach-t` | C | same syntax as `foreach`
+| defun | lisp
+| defmacro | lisp
+| unless | lisp
+| fac | lisp
+| append | lisp
+| reverse | lisp
+| length | lisp
+| nth | lisp
+| + | lisp
+| - | lisp
+| / | lisp
+| * | lisp
+| equal | lisp
+| range | lisp
+| cat | lisp | string concatination for any number of strings
+
 --------------
 ## `yacc`で生成したパーサの意味付けを`Lisp`で
 

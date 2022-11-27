@@ -17,8 +17,8 @@ typedef struct {
 
   union {
     struct {
-      cell_ptr car:16;
-      cell_ptr cdr:16;
+      cell_ptr car:20;
+      cell_ptr cdr:20;
     };
     INT_TYPE value;
     REAL_TYPE rvalue;
@@ -40,7 +40,7 @@ typedef struct {
   unsigned tf:2;
 } fun_cell;
 
-#define CNSTAB_SZ (1024*40)
+#define CNSTAB_SZ (1024*500)
 #define SYMTAB_SZ HASH_SZ
 #define STRTAB_SZ HASH_SZ
 
@@ -81,6 +81,7 @@ extern fun_cell funtab[];
 #define IS_NIL(p) ((p) == NIL)
 #define IS_CNS_OR_NUM(p) ((p) < CNSTAB_SZ && ! IS_NIL(p))
 #define IS_CNS(p) (IS_CNS_OR_NUM(p) && TAG(p) == TAG_CNS)
+#define ENDP(p) (IS_CNS(p)? 0: (IS_NIL(p)? 1: (longjmp(top, e_argtype), 0)))
 #define IS_INT(p) (IS_CNS_OR_NUM(p) && TAG(p) == TAG_INT)
 #define IS_REAL(p) (IS_CNS_OR_NUM(p) && TAG(p) == TAG_REAL)
 #define IS_NUM(p) (IS_INT(p) || IS_REAL(p))

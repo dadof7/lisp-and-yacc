@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <setjmp.h>
+#include <alloca.h>
 
 #include "cell.h"
 #include "global.h"
@@ -15,7 +16,7 @@
 
 cell_ptr _progn(cell_ptr args, cell_ptr env) {
   cell_ptr a = NIL;
-  while(! IS_NIL(args)) {
+  while(! ENDP(args)) {
     BIND(a,args);
     // don't evaluate the last arg
     if(IS_NIL(args)) return a;
@@ -43,6 +44,46 @@ cell_ptr _cond(cell_ptr args, cell_ptr env) {
   return NIL;
 }
 
+cell_ptr _tostr(cell_ptr args, cell_ptr env) {
+  cell_ptr a;
+  char buff[200];
+  EBIND(a, args, env);
+  if(IS_STR(a)) {
+    return a;
+  }
+  else if(IS_INT(a)) {
+    sprintf(buff, INT_FORMAT, CELL2INT(a));
+    return mk_strcell(buff);
+  }
+  else if(IS_REAL(a)) {
+    sprintf(buff, REAL_FORMAT, CELL2REAL(a));
+    return mk_strcell(buff);
+  }
+  else
+    longjmp(top, e_argtype);
+}
+
+cell_ptr _gensym(cell_ptr args, cell_ptr env) {
+  static int n = 0;
+  char buff[200];
+  sprintf(buff, "#GENSYM-%05d", n++);
+  return mk_symcell(buff);
+}
+
+cell_ptr _concat(cell_ptr args, cell_ptr env) {
+  cell_ptr a, b;
+  EBIND(a, args, env);
+  EBIND(b, args, env);
+  if(IS_STR(a) && IS_STR(b)) {
+    int sizea = strlen(STR_STR(a))+1;
+    int sizeb = strlen(STR_STR(b))+1;
+    char* buff = alloca(sizea+sizeb);
+    sprintf(buff, "%s%s", STR_STR(a), STR_STR(b));
+    return mk_strcell(buff);
+  }
+  else
+    longjmp(top, e_argtype);
+}
 
 CLJ _clet(cell_ptr args, cell_ptr env) {
   cell_ptr bind_part, new_env = env;
@@ -76,7 +117,6 @@ CLJ _clet_star(cell_ptr args, cell_ptr env) {
   clj.env = new_env;
   return clj;
 }
-
 
 typedef struct {
   int k;
@@ -191,7 +231,7 @@ cell_ptr _setq(cell_ptr args, cell_ptr env) {
     cell_ptr val, pair = assoc(symbol, env);
     EBIND(val, args, env);
 
-    if(IS_NIL(pair)) {
+    if(IS_NIL(pair)) { // not found, insert into the top
       cell_ptr entry = cons(cons(symbol, val), NIL);
       cell_ptr xcdr = CDR(top_level_env);
       CDR(top_level_env) = entry;
@@ -249,7 +289,7 @@ cell_ptr _bq_build(cell_ptr a, cell_ptr env, int nest)
     // tailにくっつけて、tailを最後まで移動
     cell_ptr nb;
     if(IS_CNS(next_expr) && CAR(next_expr)==comma_at_sym) {
-      if(! IS_CNS(b)) longjmp(top, e_commaat_evaled_to_non_list);
+      if(!IS_CNS(b) && !IS_NIL(b)) longjmp(top, e_commaat_evaled_to_non_list);
       nb = copy_list(b);
       if(IS_NIL(head)) head = tail = nb;
       else CDR(tail) = nb;
@@ -275,12 +315,14 @@ cell_ptr _bquote(cell_ptr args, cell_ptr env) {
   return _bq_build(a, env, 0);
 }
 
-
 cell_ptr _pr(cell_ptr args, cell_ptr env) {
   cell_ptr p;
   while(!IS_NIL(args)) {
     EBIND(p, args, env);
-    print_sex(p);
+    if(IS_STR(p))
+      printf("%s", STR_STR(p));
+    else
+      print_sex(p);
     if(!IS_NIL(args)) printf(" ");
   }
   return NIL;
@@ -300,6 +342,13 @@ cell_ptr _dump(cell_ptr args, cell_ptr env) {
   return NIL;
 }
 
+extern int cons_counter;
+
+cell_ptr _cons_counter(cell_ptr args, cell_ptr env) {
+  printf("cons called since the last gc: %d times\n", cons_counter);
+  return NIL;
+}
+
 cell_ptr _gc(cell_ptr args, cell_ptr env) {
   gc_flag = 1;
   return NIL;
@@ -313,7 +362,7 @@ cell_ptr _cons(cell_ptr args, cell_ptr env) {
 }
 
 cell_ptr _env(cell_ptr args, cell_ptr env) {
-  return top_level_env;
+  return env; // top_level_env;
 }
 
 cell_ptr _car(cell_ptr args, cell_ptr env) {
@@ -462,10 +511,31 @@ cell_ptr _consp(cell_ptr args, cell_ptr env) {
   return NIL;
 }
 
+cell_ptr _intp(cell_ptr args, cell_ptr env) {
+  cell_ptr a1;
+  EBIND(a1, args, env);
+  if(IS_INT(a1)) return true_sym;
+  return NIL;
+}
+
+cell_ptr _nump(cell_ptr args, cell_ptr env) {
+  cell_ptr a1;
+  EBIND(a1, args, env);
+  if(IS_NUM(a1)) return true_sym;
+  return NIL;
+}
+
 cell_ptr _null(cell_ptr args, cell_ptr env) {
   cell_ptr a1;
   EBIND(a1, args, env);
   if(IS_NIL(a1)) return true_sym;
+  return NIL;
+}
+
+cell_ptr _endp(cell_ptr args, cell_ptr env) {
+  cell_ptr a1;
+  EBIND(a1, args, env);
+  if(ENDP(a1)) return true_sym;
   return NIL;
 }
 
@@ -518,6 +588,21 @@ cell_ptr _parse(cell_ptr args, cell_ptr env)
   return parse_result;
 }
 
+cell_ptr _range(cell_ptr args, cell_ptr env) {
+  cell_ptr a, b, head;
+  EBIND(a, args, env);
+  EBIND(b, args, env);  
+  if(IS_INT(a) && IS_INT(b)) {
+    INT_TYPE aa = CELL2INT(a);
+    INT_TYPE bb = CELL2INT(b);
+    head = NIL;
+    for(bb=bb-1; aa <= bb; bb--) {
+      head = cons(mk_intcell(bb), head);
+    }
+    return head;
+  }
+  return NIL;
+}
 
 cell_ptr _symbolp(cell_ptr args, cell_ptr env)
 {
@@ -635,11 +720,14 @@ fun_cell funtab[] =
   { "=", &_eq },
   { "eq", &_eq },
   { "atom", &_atom },
+  { "intp", &_intp },
+  { "nump", &_nump },
   { "symbolp", &_symbolp },
   { "symbolp:", &_colon_symbolp },
   { "listp", &_listp },
   { "consp", &_consp },
   { "null", &_null },
+  { "endp", &_endp },  
   { "and", &_and },
   { "or", &_or },
   { "progn", &_progn, 1 },
@@ -648,14 +736,19 @@ fun_cell funtab[] =
   { "parse", &_parse },
   { "intern", &_intern },  
   { "cond", &_cond, 1 },
-  { "pr", &_pr },
+  { "concatenate", &_concat },
+  { "cons-counter", &_cons_counter },
+  { "pr", &_pr },  
   { "prln", &_prln },
   { "len", &_len },
   { "assoc", &_assoc },
+  { "2str", &_tostr },
+  { "gensym", &_gensym },
   { "macroexpand", &_macroexpand },
   { "funcall", &_funcall },
   { "apply", &_apply },
   { "eval", &_eval },
+  { "range", &_range },
   { "foreach", &_foreach },
   { "foreach-t", &_foreach_t },
   { (void*)0, (void*)0 },

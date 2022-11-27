@@ -20,6 +20,8 @@ static int live_num;
 
 static void sweep(cell_ptr p);
 
+int cons_counter = 0;
+
 cell_ptr cons(cell_ptr car, cell_ptr cdr) 
 {
   cell_ptr p;
@@ -27,6 +29,7 @@ cell_ptr cons(cell_ptr car, cell_ptr cdr)
   for(; cns_scanned_this_far < CNSTAB_SZ; cns_scanned_this_far++) {
     p = cns_scanned_this_far;
     if(MRK(p) == 0b0) {
+      cons_counter++;
       MRK(p) = 0b1;
       CAR(p) = car;
       CDR(p) = cdr;
@@ -73,6 +76,7 @@ int gc_flag = 0;
 
 void gc()
 {
+  cons_counter = 0;
   cns_scanned_this_far = CNSTAB_OFFSET;
   live_cns = live_num = 0;
 
@@ -106,7 +110,7 @@ void cns_usage()
   fprintf(stderr, "cns pointer scanned by this far: %d/%d %.2f%%\n", cns_scanned_this_far, CNSTAB_SZ, cns_scanned_this_far * 100.0 / CNSTAB_SZ);
 }
 
-#define THRESHOLD 60
+#define THRESHOLD 40
 int is_cnstab_tight() 
 {
   return 100 * cns_scanned_this_far / CNSTAB_SZ > THRESHOLD; // where to start gc
